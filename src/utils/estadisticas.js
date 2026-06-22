@@ -1,18 +1,13 @@
-// ═══════════════════════════════════════════════════════════════════════
-// GESTOR DE ESTADÍSTICAS Y PERSISTENCIA
-// ═══════════════════════════════════════════════════════════════════════
-
 export class EstadisticasManager {
   constructor() {
-    this.ensayosHistorico = JSON.parse(localStorage.getItem("paes_ensayos_historico")) || [];
-    this.idsPreguntasUsadas = JSON.parse(localStorage.getItem("paes_ids_preguntas_usadas")) || [];
+    this.ensayosHistorico = JSON.parse(localStorage.getItem('paes_ensayos_historico')) || [];
+    this.idsPreguntasUsadas = JSON.parse(localStorage.getItem('paes_ids_preguntas_usadas')) || [];
   }
 
-  // Guardar un ensayo completo
   guardarEnsayo(ensayoCompleto) {
     const ensayo = {
       id: Date.now(),
-      fecha: new Date().toLocaleDateString("es-CL"),
+      fecha: new Date().toLocaleDateString('es-CL'),
       materias: ensayoCompleto.materias,
       totalPreguntas: ensayoCompleto.preguntas.length,
       correctas: ensayoCompleto.totalCorrectas,
@@ -20,16 +15,14 @@ export class EstadisticasManager {
       tiempoUsado: ensayoCompleto.tiempoUsado,
       puntajeEstimado: this.estimarPuntajePAES(ensayoCompleto.porcentaje),
       ejeStats: ensayoCompleto.ejeStats,
-      ejesDebiles: ensayoCompleto.ejesDebiles,
-      detalle: ensayoCompleto.respuestas
+      ejesDebiles: ensayoCompleto.ejesDebiles
     };
 
     this.ensayosHistorico.push(ensayo);
-    localStorage.setItem("paes_ensayos_historico", JSON.stringify(this.ensayosHistorico));
+    localStorage.setItem('paes_ensayos_historico', JSON.stringify(this.ensayosHistorico));
     return ensayo;
   }
 
-  // Estimar puntaje PAES (150-1000)
   estimarPuntajePAES(porcentaje) {
     const puntajeBase = 150;
     const puntajeMax = 1000;
@@ -37,16 +30,11 @@ export class EstadisticasManager {
     return Math.round(puntajeBase + (porcentaje / 100) * rango);
   }
 
-  // Obtener progreso general
   obtenerProgreso() {
     if (this.ensayosHistorico.length === 0) return null;
-
     const ultimos5 = this.ensayosHistorico.slice(-5);
     const promedio = ultimos5.reduce((a, b) => a + b.porcentaje, 0) / ultimos5.length;
-    const tendencia = ultimos5.length >= 2 
-      ? ultimos5[ultimos5.length - 1].porcentaje - ultimos5[0].porcentaje 
-      : 0;
-
+    const tendencia = ultimos5.length >= 2 ? ultimos5[ultimos5.length - 1].porcentaje - ultimos5[0].porcentaje : 0;
     return {
       totalEnsayos: this.ensayosHistorico.length,
       ultimos5,
@@ -58,10 +46,8 @@ export class EstadisticasManager {
     };
   }
 
-  // Detectar ejes débiles
   detectarEjesDebiles(porcentajeMinimo = 65) {
     if (this.ensayosHistorico.length === 0) return [];
-
     const ejeStats = {};
     this.ensayosHistorico.forEach(ensayo => {
       ensayo.ejeStats?.forEach(stat => {
@@ -73,49 +59,31 @@ export class EstadisticasManager {
         ejeStats[key].totalPreguntas += stat.total;
       });
     });
-
     return Object.values(ejeStats)
       .filter(e => (e.totalCorrectas / e.totalPreguntas) * 100 < porcentajeMinimo)
-      .map(e => ({
-        ...e,
-        porcentaje: Math.round((e.totalCorrectas / e.totalPreguntas) * 100)
-      }))
+      .map(e => ({ ...e, porcentaje: Math.round((e.totalCorrectas / e.totalPreguntas) * 100) }))
       .sort((a, b) => a.porcentaje - b.porcentaje)
       .slice(0, 6);
   }
 
-  // Registrar preguntas usadas
   registrarPreguntasUsadas(ids) {
     this.idsPreguntasUsadas = [...new Set([...this.idsPreguntasUsadas, ...ids])];
-    localStorage.setItem("paes_ids_preguntas_usadas", JSON.stringify(this.idsPreguntasUsadas));
+    localStorage.setItem('paes_ids_preguntas_usadas', JSON.stringify(this.idsPreguntasUsadas));
   }
 
-  // Obtener IDs preguntasusadas
   obtenerIdsPreguntasUsadas() {
     return this.idsPreguntasUsadas;
   }
 
-  // Obtener todos los ensayos
   obtenerTodosEnsayos() {
     return this.ensayosHistorico;
   }
 
-  // Limpiar historial (para debug)
   limpiarHistorico() {
-    localStorage.removeItem("paes_ensayos_historico");
-    localStorage.removeItem("paes_ids_preguntas_usadas");
+    localStorage.removeItem('paes_ensayos_historico');
+    localStorage.removeItem('paes_ids_preguntas_usadas');
     this.ensayosHistorico = [];
     this.idsPreguntasUsadas = [];
-  }
-
-  // Exportar datos como JSON
-  exportarDatos() {
-    return {
-      ensayos: this.ensayosHistorico,
-      totalEnsayos: this.ensayosHistorico.length,
-      progreso: this.obtenerProgreso(),
-      ejesDebiles: this.detectarEjesDebiles()
-    };
   }
 }
 
